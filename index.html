@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlogMate AI - Automated Blog Post Generator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        .glass {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        .loading {
+            display: none;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+        .active-tab {
+            background: rgba(255, 255, 255, 0.3);
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-[#8EC5FC] to-[#E0C3FC] min-h-screen p-4 md:p-8">
+    <!-- Navbar -->
+    <nav class="glass rounded-xl p-4 mb-8 flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-white">BlogMate AI ✨</h1>
+        <div id="navButtons" class="flex gap-4">
+            <button onclick="showModal('login')" class="py-2 px-4 rounded-lg bg-white/30 hover:bg-white/40 text-white">Login</button>
+            <button onclick="showModal('register')" class="py-2 px-4 rounded-lg bg-white/30 hover:bg-white/40 text-white">Register</button>
+        </div>
+        <div id="userProfile" class="hidden flex gap-4 items-center">
+            <span class="text-white">Posts remaining: <span id="postsRemaining">1</span></span>
+            <button onclick="showSection('profile')" class="flex items-center gap-2 text-white">
+                <i class="bi bi-person-circle text-2xl"></i>
+                <span id="username">User</span>
+            </button>
+            <button onclick="logout()" class="py-2 px-4 rounded-lg bg-white/30 hover:bg-white/40 text-white">Logout</button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <div class="max-w-4xl mx-auto">
+        <!-- Generator Section -->
+        <div id="generator" class="hidden">
+            <div class="glass rounded-xl p-6 mb-8">
+                <div class="mb-6">
+                    <label class="block text-white font-bold mb-2">Input Type</label>
+                    <select id="inputType" class="w-full p-3 rounded-lg bg-white/20 border border-white/30 text-white">
+                        <option value="keyword">Keyword</option>
+                        <option value="title">Title</option>
+                        <option value="link">URL Link</option>
+                    </select>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-white font-bold mb-2">Enter your input</label>
+                    <input type="text" id="userInput" class="w-full p-3 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50">
+                </div>
+                <button id="generateBtn" class="w-full py-3 px-6 rounded-lg bg-white/30 hover:bg-white/40 text-white font-bold">
+                    Generate Blog Post & Image
+                </button>
+            </div>
+
+            <div id="result" class="glass rounded-xl p-6 hidden">
+                <h2 class="text-2xl font-bold text-white mb-4">Generated Content</h2>
+                <div class="mb-6">
+                    <h3 class="text-white font-bold mb-2">Blog Post</h3>
+                    <div id="blogContent" class="bg-white/10 rounded-lg p-4 text-white"></div>
+                </div>
+                <div class="mb-6">
+                    <h3 class="text-white font-bold mb-2">Generated Image</h3>
+                    <img id="generatedImage" class="w-full rounded-lg" src="" alt="">
+                </div>
+                <div class="flex gap-4">
+                    <button id="postToBlogger" class="flex-1 py-3 px-6 rounded-lg bg-white/30 hover:bg-white/40 text-white font-bold">
+                        Post to Blogger
+                    </button>
+                    <button id="copyContent" class="flex-1 py-3 px-6 rounded-lg bg-white/30 hover:bg-white/40 text-white font-bold">
+                        Copy Content
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Profile Section -->
+        <div id="profile" class="hidden">
+            <div class="glass rounded-xl p-6 mb-8">
+                <h2 class="text-2xl font-bold text-white mb-4">Your Posts</h2>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-white">
+                        <thead>
+                            <tr class="border-b border-white/20">
+                                <th class="p-2 text-left">Date</th>
+                                <th class="p-2 text-left">Title</th>
+                                <th class="p-2 text-left">Status</th>
+                                <th class="p-2 text-left">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="postsTable">
+                            <!-- Posts will be dynamically added here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Membership Plans -->
+            <div class="glass rounded-xl p-6">
+                <h2 class="text-2xl font-bold text-white mb-4">Membership Plans</h2>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <div class="glass p-6 rounded-lg">
+                        <h3 class="text-xl font-bold text-white mb-2">Basic</h3>
+                        <p class="text-white/80 mb-4">1 post per month</p>
+                        <p class="text-2xl font-bold text-white mb-4">Free</p>
+                        <button onclick="upgradePlan('basic')" class="w-full py-2 px-4 rounded-lg bg-white/30 hover:bg-white/40 text-white">
+                            Current Plan
+                        </button>
+                    </div>
+                    <div class="glass p-6 rounded-lg">
+                        <h3 class="text-xl font-bold text-white mb-2">Pro</h3>
+                        <p class="text-white/80 mb-4">10 posts per month</p>
+                        <p class="text-2xl font-bold text-white mb-4">$9.99</p>
+                        <button onclick="upgradePlan('pro')" class="w-full py-2 px-4 rounded-lg bg-white/30 hover:bg-white/40 text-white">
+                            Upgrade
+                        </button>
+                    </div>
+                    <div class="glass p-6 rounded-lg">
+                        <h3 class="text-xl font-bold text-white mb-2">Enterprise</h3>
+                        <p class="text-white/80 mb-4">Unlimited posts</p>
+                        <p class="text-2xl font-bold text-white mb-4">$29.99</p>
+                        <button onclick="upgradePlan('enterprise')" class="w-full py-2 px-4 rounded-lg bg-white/30 hover:bg-white/40 text-white">
+                            Upgrade
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="loginModal" class="modal">
+        <div class="glass rounded-xl p-6 max-w-md mx-auto mt-20">
+            <h2 class="text-2xl font-bold text-white mb-4">Login</h2>
+            <input type="email" placeholder="Email" class="w-full p-3 mb-4 rounded-lg bg-white/20 border border-white/30 text-white">
+            <input type="password" placeholder="Password" class="w-full p-3 mb-4 rounded-lg bg-white/20 border border-white/30 text-white">
+            <button onclick="login()" class="w-full py-3 px-6 rounded-lg bg-white/30 hover:bg-white/40 text-white font-bold mb-4">
+                Login
+            </button>
+            <button onclick="hideModals()" class="w-full py-3 px-6 rounded-lg bg-white/10 hover:bg-white/20 text-white">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+    <div id="registerModal" class="modal">
+        <div class="glass rounded-xl p-6 max-w-md mx-auto mt-20">
+            <h2 class="text-2xl font-bold text-white mb-4">Register</h2>
+            <input type="text" placeholder="Username" class="w-full p-3 mb-4 rounded-lg bg-white/20 border border-white/30 text-white">
+            <input type="email" placeholder="Email" class="w-full p-3 mb-4 rounded-lg bg-white/20 border border-white/30 text-white">
+            <input type="password" placeholder="Password" class="w-full p-3 mb-4 rounded-lg bg-white/20 border border-white/30 text-white">
+            <button onclick="register()" class="w-full py-3 px-6 rounded-lg bg-white/30 hover:bg-white/40 text-white font-bold mb-4">
+                Register
+            </button>
+            <button onclick="hideModals()" class="w-full py-3 px-6 rounded-lg bg-white/10 hover:bg-white/20 text-white">
+                Cancel
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Mock user state
+        let isLoggedIn = false;
+        let currentUser = null;
+        let postsRemaining = 1;
+
+        // Show/hide sections
+        function showSection(section) {
+            document.getElementById('generator').style.display = 'none';
+            document.getElementById('profile').style.display = 'none';
+            document.getElementById(section).style.display = 'block';
+        }
+
+        // Modal functions
+        function showModal(modal) {
+            hideModals();
+            document.getElementById(`${modal}Modal`).style.display = 'block';
+        }
+
+        function hideModals() {
+            document.querySelectorAll('.modal').forEach(modal => modal.style.display = 'none');
+        }
+
+        // Auth functions
+        function login() {
+            isLoggedIn = true;
+            currentUser = { name: 'John Doe', email: 'john@example.com' };
+            document.getElementById('navButtons').style.display = 'none';
+            document.getElementById('userProfile').style.display = 'flex';
+            document.getElementById('username').textContent = currentUser.name;
+            hideModals();
+            showSection('generator');
+        }
+
+        function register() {
+            login(); // For demo, just login after register
+        }
+
+        function logout() {
+            isLoggedIn = false;
+            currentUser = null;
+            document.getElementById('navButtons').style.display = 'flex';
+            document.getElementById('userProfile').style.display = 'none';
+            showSection('generator');
+        }
+
+        // Generator functions
+        document.getElementById('generateBtn').addEventListener('click', async () => {
+            if (!isLoggedIn) {
+                alert('Please login first');
+                return;
+            }
+            if (postsRemaining <= 0) {
+                alert('No posts remaining. Please upgrade your plan.');
+                return;
+            }
+            // Mock generation
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('blogContent').textContent = 'Generated blog post content...';
+            document.getElementById('generatedImage').src = 'https://source.unsplash.com/random/800x400';
+            postsRemaining--;
+            document.getElementById('postsRemaining').textContent = postsRemaining;
+        });
+
+        // Plan upgrade function
+        function upgradePlan(plan) {
+            if (!isLoggedIn) {
+                alert('Please login first');
+                return;
+            }
+            switch(plan) {
+                case 'basic':
+                    postsRemaining = 1;
+                    break;
+                case 'pro':
+                    postsRemaining = 10;
+                    break;
+                case 'enterprise':
+                    postsRemaining = 999;
+                    break;
+            }
+            document.getElementById('postsRemaining').textContent = postsRemaining;
+            alert(`Successfully upgraded to ${plan} plan!`);
+        }
+
+        // Initialize app
+        showSection('generator');
+    </script>
+<script>document.body.addEventListener('wheel', e => { if (!e.ctrlKey) return; e.preventDefault(); return }, { passive: false })</script>
+	</body>
+</html>
